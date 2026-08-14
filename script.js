@@ -45,6 +45,7 @@ async function redirectIfCompanyExists() {
   if (editingCheckin || !companyInput.value.trim()) return false;
   const exists = await companyAlreadyCheckedInToday(companyInput.value);
   if (!exists) return false;
+  localStorage.setItem('portalEmpresaAguardando',companyInput.value.trim());
   feedback.textContent = 'Esta empresa já realizou o check-in hoje. Abrindo a fila...';
   feedback.classList.remove('error');
   feedback.style.display = 'block';
@@ -163,6 +164,7 @@ form.addEventListener('submit', async (event) => {
 
   feedback.classList.remove('error');
   if (savedRecord) localStorage.setItem(lastCheckinKey,JSON.stringify(savedRecord));
+  if (savedRecord) localStorage.setItem('portalEmpresaAguardando',savedRecord.empresa);
   if (editingCheckin) {
     localStorage.setItem(lastCheckinKey,JSON.stringify({ ...editingCheckin,...checkinData }));
   }

@@ -35,9 +35,20 @@
         <div class="queue-divider"></div>
         <h2>Empresas com check-in hoje</h2>
         <div class="driver-queue" id="driver-queue"><span>Carregando fila...</span></div>
+        <button class="enable-alert" type="button" id="enable-alert">🔔 ATIVAR AVISO SONORO</button>
       </div>
     </section>
   </main>
+  <div class="turn-alert" id="turn-alert" hidden>
+    <section role="alertdialog" aria-modal="true" aria-labelledby="turn-title">
+      <span aria-hidden="true">🔔</span>
+      <small>ATENDIMENTO LIBERADO</small>
+      <h2 id="turn-title">É A SUA VEZ!</h2>
+      <p>A empresa <strong id="turn-company"></strong> pode seguir para o recebimento.</p>
+      <button type="button" id="close-turn-alert">ENTENDI</button>
+    </section>
+  </div>
+  <audio id="notification-audio" src="notificacao.mp3" preload="auto"></audio>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
   <script>
@@ -49,6 +60,53 @@
       window.SUPABASE_CONFIG.url,
       window.SUPABASE_CONFIG.publishableKey
     );
+    const trackedCompany = localStorage.getItem('portalEmpresaAguardando') || '';
+    const notificationAudio = document.querySelector('#notification-audio');
+    const enableAlertButton = document.querySelector('#enable-alert');
+    const turnAlert = document.querySelector('#turn-alert');
+    let audioEnabled = false;
+
+    function normalizeName(value) {
+      return (value || '').trim().toLocaleLowerCase('pt-BR').replace(/\s+/g,' ');
+    }
+
+    async function enableAudio() {
+      try {
+        notificationAudio.muted = true;
+        await notificationAudio.play();
+        notificationAudio.pause();
+        notificationAudio.currentTime = 0;
+        notificationAudio.muted = false;
+        audioEnabled = true;
+        enableAlertButton.textContent = '✓ AVISO SONORO ATIVADO';
+        enableAlertButton.classList.add('enabled');
+      } catch (error) {
+        enableAlertButton.textContent = 'TOQUE NOVAMENTE PARA ATIVAR';
+      }
+    }
+
+    function notifyDriver(record) {
+      const notificationKey = `portalAvisado-${record.id}`;
+      if (sessionStorage.getItem(notificationKey)) return;
+      sessionStorage.setItem(notificationKey,'sim');
+      document.querySelector('#turn-company').textContent = record.empresa;
+      turnAlert.hidden = false;
+      document.body.classList.add('modal-open');
+      if (navigator.vibrate) navigator.vibrate([700,250,700,250,1000]);
+      if (audioEnabled) {
+        notificationAudio.currentTime = 0;
+        notificationAudio.play().catch(() => {
+          enableAlertButton.hidden = false;
+        });
+      }
+    }
+
+    enableAlertButton.addEventListener('click',enableAudio);
+    document.querySelector('#close-turn-alert').addEventListener('click',() => {
+      turnAlert.hidden = true;
+      document.body.classList.remove('modal-open');
+      notificationAudio.pause();
+    });
 
     async function loadDriverQueue() {
       const start = new Date();
@@ -56,7 +114,7 @@
       const end = new Date(start);
       end.setDate(end.getDate() + 1);
       const { data,error } = await waitingSupabase.from('motoristas')
-        .select('id,empresa,criado_em')
+        .select('id,empresa,status,criado_em')
         .gte('criado_em',start.toISOString())
         .lt('criado_em',end.toISOString())
         .order('criado_em',{ ascending:true });
@@ -71,14 +129,26 @@
       }
       data.forEach((record,index) => {
         const item = document.createElement('div');
+        if (record.status === 'em_atendimento') item.classList.add('in-service');
         const position = document.createElement('i');
         position.textContent = String(index + 1);
         const details = document.createElement('span');
+        details.className = 'queue-company';
         const company = document.createElement('strong');
         company.textContent = record.empresa;
         details.appendChild(company);
+        if (record.status === 'em_atendimento') {
+          const released = document.createElement('b');
+          released.className = 'released-label';
+          released.textContent = 'Liberado';
+          details.appendChild(released);
+        }
         item.append(position,details);
         queue.appendChild(item);
+        if (record.status === 'em_atendimento'
+          && normalizeName(record.empresa) === normalizeName(trackedCompany)) {
+          notifyDriver(record);
+        }
       });
     }
 
