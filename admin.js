@@ -14,10 +14,136 @@ const cancelShiftButton = document.querySelector('#cancel-shift');
 const confirmShiftButton = document.querySelector('#confirm-shift');
 const config = window.SUPABASE_CONFIG;
 const supabaseClient = window.supabase.createClient(config.url, config.publishableKey);
+const loginScreen = document.querySelector('#login-screen');
+const adminPanel = document.querySelector('#admin-panel');
+const loginForm = document.querySelector('#login-form');
+const loginButton = document.querySelector('#login-button');
+const loginError = document.querySelector('#login-error');
+const logoutButton = document.querySelector('#logout-button');
+const passwordModal = document.querySelector('#password-modal');
+const passwordForm = document.querySelector('#password-form');
+const passwordFeedback = document.querySelector('#password-feedback');
 let records = [];
 let pendingServiceRecord = null;
 let pendingTargetStatus = null;
 let loadingRecords = false;
+let refreshTimer = null;
+
+function usernameToEmail(username) {
+  const identifier = (username || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g,'')
+    .toLocaleLowerCase('pt-BR')
+    .replace(/[^a-z0-9]/g,'');
+  return identifier ? `${identifier}@portal-recebimento.com` : '';
+}
+
+async function showAuthenticatedPanel(session) {
+  const authenticated = Boolean(session);
+  loginScreen.hidden = authenticated;
+  adminPanel.hidden = !authenticated;
+  if (authenticated) {
+    await loadRecords();
+    if (!refreshTimer) refreshTimer = setInterval(() => loadRecords(false),3000);
+  } else if (refreshTimer) {
+    clearInterval(refreshTimer);
+    refreshTimer = null;
+  }
+}
+
+loginForm.addEventListener('submit',async (event) => {
+  event.preventDefault();
+  loginError.textContent = '';
+  loginButton.disabled = true;
+  loginButton.textContent = 'ENTRANDO...';
+  const email = usernameToEmail(document.querySelector('#login-email').value);
+  const password = document.querySelector('#login-password').value;
+  const { error } = await supabaseClient.auth.signInWithPassword({ email,password });
+  loginButton.disabled = false;
+  loginButton.textContent = 'ENTRAR';
+  if (error) loginError.textContent = 'E-mail ou senha incorretos.';
+});
+
+logoutButton.addEventListener('click',async () => {
+  await supabaseClient.auth.signOut();
+});
+
+document.querySelector('#private-settings').addEventListener('click',() => {
+  passwordModal.hidden = false;
+  document.querySelector('#new-user-form').reset();
+  document.querySelector('#new-user-name').value = '';
+  document.querySelector('#new-user-password').value = '';
+  document.querySelector('#new-user-confirm').value = '';
+  passwordFeedback.textContent = '';
+  passwordFeedback.classList.remove('success');
+  document.body.classList.add('modal-open');
+});
+
+function closePasswordModal() {
+  passwordModal.hidden = true;
+  passwordForm.reset();
+  document.body.classList.remove('modal-open');
+}
+
+document.querySelector('#password-close').addEventListener('click',closePasswordModal);
+passwordModal.addEventListener('click',(event) => { if (event.target === passwordModal) closePasswordModal(); });
+
+passwordForm.addEventListener('submit',async (event) => {
+  event.preventDefault();
+  const currentPassword = document.querySelector('#current-password').value;
+  const newPassword = document.querySelector('#new-password').value;
+  const confirmation = document.querySelector('#confirm-password').value;
+  const email = usernameToEmail(document.querySelector('#password-user').value);
+  passwordFeedback.classList.remove('success');
+  if (newPassword !== confirmation) {
+    passwordFeedback.textContent = 'As novas senhas não são iguais.';
+    return;
+  }
+  const { error:loginError } = await supabaseClient.auth.signInWithPassword({ email,password:currentPassword });
+  if (loginError) {
+    passwordFeedback.textContent = 'A senha atual está incorreta.';
+    return;
+  }
+  const { error } = await supabaseClient.auth.updateUser({ password:newPassword });
+  if (error) {
+    passwordFeedback.textContent = 'Não foi possível alterar a senha.';
+    return;
+  }
+  passwordFeedback.textContent = 'Senha alterada com sucesso.';
+  passwordFeedback.classList.add('success');
+  passwordForm.reset();
+  await supabaseClient.auth.signOut();
+});
+
+document.querySelector('#new-user-form').addEventListener('submit',(event) => {
+  event.preventDefault();
+  const username = document.querySelector('#new-user-name').value.trim();
+  const password = document.querySelector('#new-user-password').value;
+  const confirmation = document.querySelector('#new-user-confirm').value;
+  const feedback = document.querySelector('#new-user-feedback');
+  feedback.classList.remove('success');
+  if (!/^[\p{L}\p{N}]+(?: [\p{L}\p{N}]+)*$/u.test(username)) {
+    feedback.textContent = 'Use somente nomes, números e espaços simples.';
+    return;
+  }
+  if (password !== confirmation) {
+    feedback.textContent = 'As senhas informadas não são iguais.';
+    return;
+  }
+  feedback.textContent = 'Para concluir, crie este usuário em Authentication → Users no Supabase.';
+});
+
+document.querySelector('#new-user-name').addEventListener('input',(event) => {
+  const cursor = event.target.selectionStart;
+  event.target.value = event.target.value
+    .toLocaleLowerCase('pt-BR')
+    .replace(/(^|\s)([\p{L}\p{N}])/gu,(_,space,letter) => space + letter.toLocaleUpperCase('pt-BR'));
+  event.target.setSelectionRange(cursor,cursor);
+});
+
+supabaseClient.auth.onAuthStateChange((_event,session) => {
+  setTimeout(() => showAuthenticatedPanel(session),0);
+});
 
 function isToday(value) {
   const date = new Date(value);
@@ -285,5 +411,4 @@ async function loadRecords(showLoading = true) {
 }
 
 search.addEventListener('input',() => render(search.value));
-loadRecords();
-setInterval(() => loadRecords(false),3000);
+supabaseClient.auth.getSession().then(({ data }) => showAuthenticatedPanel(data.session));

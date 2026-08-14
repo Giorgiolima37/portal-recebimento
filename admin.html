@@ -11,7 +11,33 @@
   <link rel="stylesheet" href="admin.css">
 </head>
 <body>
-  <main class="admin-shell">
+  <main class="login-shell" id="login-screen">
+    <header class="admin-header login-header">
+      <a class="brand" href="index.html" aria-label="Portal de Recebimento">
+        <span class="brand-icon" aria-hidden="true"><svg viewBox="0 0 64 42"><path d="M2 4h40v26H2zM42 14h10l9 9v7H42zM8 30a7 7 0 1 0 14 0m25 0a7 7 0 1 0 14 0"/></svg></span>
+        <span><b>PORTAL DE</b><strong>RECEBIMENTO</strong><small>Painel Administrativo</small></span>
+      </a>
+      <span class="retailer-logo" role="img" aria-label="Atacadão"></span>
+    </header>
+    <section class="login-content">
+      <div class="access-heading">
+        <p>ACESSO RESTRITO</p>
+        <button class="private-badge" id="private-settings" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm8 3.5-.1-1.2 2-1.5-2-3.4-2.4 1a8 8 0 0 0-2.1-1.2L15 3h-4l-.4 2.7a8 8 0 0 0-2.1 1.2l-2.4-1-2 3.4 2 1.5L6 12l.1 1.2-2 1.5 2 3.4 2.4-1a8 8 0 0 0 2.1 1.2L11 21h4l.4-2.7a8 8 0 0 0 2.1-1.2l2.4 1 2-3.4-2-1.5.1-1.2Z"/></svg>
+          Privado
+        </button>
+      </div>
+      <h1>Entrar no painel</h1>
+      <form id="login-form">
+        <label>Usuário<input id="login-email" type="text" autocomplete="username" required placeholder="Digite seu nome de usuário" autocapitalize="words"></label>
+        <label>Senha<input id="login-password" type="password" autocomplete="current-password" required placeholder="Digite sua senha"></label>
+        <button id="login-button" type="submit">ENTRAR</button>
+        <span class="login-error" id="login-error" role="alert"></span>
+      </form>
+    </section>
+  </main>
+
+  <main class="admin-shell" id="admin-panel" hidden>
     <header class="admin-header">
       <a class="brand" href="index.html" aria-label="Portal de Recebimento">
         <span class="brand-icon" aria-hidden="true">
@@ -20,7 +46,7 @@
         <span><b>PORTAL DE</b><strong>RECEBIMENTO</strong><small>Painel Administrativo</small></span>
       </a>
       <span class="retailer-logo" role="img" aria-label="Atacadão"></span>
-      <div class="admin-user"><span>José</span><span class="avatar"><img src="icone.png" alt="Ícone de José"></span></div>
+      <div class="admin-user"><button type="button" id="logout-button" title="Sair do painel">Sair</button><span class="avatar"><img src="icone.png" alt="Ícone de José"></span></div>
     </header>
 
     <section class="admin-content">
@@ -54,6 +80,37 @@
       </section>
     </section>
   </main>
+
+  <div class="modal-backdrop" id="password-modal" hidden>
+    <section class="password-modal" role="dialog" aria-modal="true" aria-labelledby="password-title">
+      <button class="modal-close" id="password-close" type="button" aria-label="Fechar">×</button>
+      <span class="modal-label">CONFIGURAÇÕES PRIVADAS</span>
+      <h2 id="password-title">Alterar minha senha</h2>
+      <div class="registered-users">
+        <strong>Usuários cadastrados</strong>
+        <span>Wallison</span><span>Vitória</span><span>Max</span>
+      </div>
+      <form id="password-form">
+        <label>Usuário<input id="password-user" type="text" required placeholder="Digite seu nome de usuário" autocapitalize="words"></label>
+        <label>Senha atual<input id="current-password" type="password" autocomplete="current-password" required></label>
+        <label>Nova senha<input id="new-password" type="password" autocomplete="new-password" minlength="6" required></label>
+        <label>Confirmar nova senha<input id="confirm-password" type="password" autocomplete="new-password" minlength="6" required></label>
+        <button type="submit" id="change-password">MUDAR A SENHA</button>
+        <span class="password-feedback" id="password-feedback" role="alert"></span>
+      </form>
+      <div class="settings-divider"></div>
+      <section class="new-user-section">
+        <h3>Adicionar novo usuário</h3>
+        <form id="new-user-form" autocomplete="off">
+          <label>Nome do usuário<input id="new-user-name" name="portal-new-username" type="text" maxlength="40" required placeholder="" autocomplete="off" autocapitalize="words"></label>
+          <label>Senha inicial<input id="new-user-password" name="portal-new-password" type="password" minlength="6" required placeholder="" autocomplete="new-password"></label>
+          <label>Confirmar senha<input id="new-user-confirm" name="portal-confirm-password" type="password" minlength="6" required placeholder="" autocomplete="new-password"></label>
+          <button type="submit" id="add-user-button">ADICIONAR USUÁRIO</button>
+          <span class="password-feedback" id="new-user-feedback" role="alert"></span>
+        </form>
+      </section>
+    </section>
+  </div>
 
   <div class="modal-backdrop" id="driver-modal" hidden>
     <section class="driver-modal" role="dialog" aria-modal="true" aria-labelledby="modal-company">
