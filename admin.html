@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#07558f">
+  <title>Administração | Portal de Recebimento</title>
+  <link rel="icon" type="image/png" href="atacadao.png">
+  <link rel="apple-touch-icon" href="atacadao.png">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+  <main class="admin-shell">
+    <header class="admin-header">
+      <a class="brand" href="index.html" aria-label="Portal de Recebimento">
+        <span class="brand-icon" aria-hidden="true">
+          <svg viewBox="0 0 64 42"><path d="M2 4h40v26H2zM42 14h10l9 9v7H42zM8 30a7 7 0 1 0 14 0m25 0a7 7 0 1 0 14 0"/></svg>
+        </span>
+        <span><b>PORTAL DE</b><strong>RECEBIMENTO</strong><small>Painel Administrativo</small></span>
+      </a>
+      <span class="retailer-logo" role="img" aria-label="Atacadão"></span>
+      <div class="admin-user"><span>José</span><span class="avatar"><img src="icone.png" alt="Ícone de José"></span></div>
+    </header>
+
+    <section class="admin-content">
+      <div class="page-title">
+        <div class="admin-title"><p>PAINEL ADMINISTRATIVO</p><div class="title-line"><h1>Recebimentos de motoristas</h1><button type="button" id="end-shift" aria-label="Finalizar expediente" title="Finalizar expediente"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v10m6.4-6.4a9 9 0 1 1-12.8 0"/></svg></button></div></div>
+      </div>
+
+      <section class="summary" aria-label="Resumo">
+        <article><span>Total de empresas hoje</span><strong id="companies-today-count">0</strong></article>
+        <article><span>Aguardando</span><strong id="waiting-count">0</strong></article>
+        <article><span>Em atendimento</span><strong id="service-count">0</strong></article>
+        <article><span>Recebidos hoje</span><strong id="today-count">0</strong></article>
+      </section>
+
+      <section class="records-card">
+        <div class="records-heading">
+          <div><h2>Motoristas cadastrados</h2><p>Informações enviadas pela tela de check-in</p></div>
+          <label class="search-box">
+            <span>Buscar cadastro</span>
+            <input id="search" type="search" placeholder="Empresa, motorista ou celular">
+          </label>
+        </div>
+
+        <div class="table-wrap">
+          <div class="company-list" id="records-body" aria-label="Empresas em espera"></div>
+          <div class="empty-state" id="empty-state">
+            <strong>Motoristas em espera</strong>
+            <span>Os dados enviados pelos motoristas aparecerão aqui.</span>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <div class="modal-backdrop" id="driver-modal" hidden>
+    <section class="driver-modal" role="dialog" aria-modal="true" aria-labelledby="modal-company">
+      <button class="modal-close" id="modal-close" type="button" aria-label="Fechar">×</button>
+      <span class="modal-label">EMPRESA</span>
+      <h2 id="modal-company"></h2>
+      <div class="modal-detail"><span>Nome do motorista</span><strong id="modal-driver"></strong></div>
+      <div class="modal-detail"><span>Tipo de veículo</span><strong id="modal-vehicle"></strong></div>
+      <div class="modal-detail"><span>Número de telefone</span><a id="modal-phone" href="#"></a></div>
+    </section>
+  </div>
+  <div class="modal-backdrop" id="service-modal" hidden>
+    <section class="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="service-title">
+      <span class="confirm-icon" aria-hidden="true">✓</span>
+      <h2 id="service-title">Liberar atendimento?</h2>
+      <p>A empresa <strong id="service-company"></strong> sairá de “Aguardando” e entrará em “Em atendimento”.</p>
+      <div class="confirm-actions">
+        <button type="button" class="cancel-service" id="cancel-service">Cancelar</button>
+        <button type="button" class="confirm-service" id="confirm-service">Confirmar</button>
+      </div>
+    </section>
+  </div>
+  <div class="modal-backdrop" id="shift-modal" hidden>
+    <section class="confirm-modal end-shift-modal" role="dialog" aria-modal="true" aria-labelledby="shift-title">
+      <span class="confirm-icon danger" aria-hidden="true">!</span>
+      <h2 id="shift-title">Finalizar expediente?</h2>
+      <p>Todos os check-ins serão apagados e os indicadores voltarão a zero. Esta ação não pode ser desfeita.</p>
+      <div class="confirm-actions">
+        <button type="button" class="cancel-service" id="cancel-shift">Cancelar</button>
+        <button type="button" class="finish-shift" id="confirm-shift">Finalizar expediente</button>
+      </div>
+    </section>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>
