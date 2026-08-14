@@ -65,12 +65,26 @@
     const enableAlertButton = document.querySelector('#enable-alert');
     const turnAlert = document.querySelector('#turn-alert');
     let audioEnabled = false;
+    let wakeLock = null;
 
     function normalizeName(value) {
       return (value || '').trim().toLocaleLowerCase('pt-BR').replace(/\s+/g,' ');
     }
 
+    async function keepScreenAwake() {
+      if (!('wakeLock' in navigator) || document.visibilityState !== 'visible') return false;
+      try {
+        wakeLock = await navigator.wakeLock.request('screen');
+        wakeLock.addEventListener('release', () => { wakeLock = null; }, { once:true });
+        return true;
+      } catch (error) {
+        wakeLock = null;
+        return false;
+      }
+    }
+
     async function enableAudio() {
+      const screenAwake = await keepScreenAwake();
       try {
         notificationAudio.muted = true;
         await notificationAudio.play();
@@ -78,7 +92,9 @@
         notificationAudio.currentTime = 0;
         notificationAudio.muted = false;
         audioEnabled = true;
-        enableAlertButton.textContent = '✓ AVISO SONORO ATIVADO';
+        enableAlertButton.textContent = screenAwake
+          ? '✓ AVISO ATIVADO E TELA SEMPRE LIGADA'
+          : '✓ AVISO SONORO ATIVADO';
         enableAlertButton.classList.add('enabled');
       } catch (error) {
         enableAlertButton.textContent = 'TOQUE NOVAMENTE PARA ATIVAR';
@@ -102,6 +118,12 @@
     }
 
     enableAlertButton.addEventListener('click',enableAudio);
+    document.addEventListener('visibilitychange', async () => {
+      if (document.visibilityState === 'visible' && audioEnabled && !wakeLock) {
+        const screenAwake = await keepScreenAwake();
+        if (screenAwake) enableAlertButton.textContent = '✓ AVISO ATIVADO E TELA SEMPRE LIGADA';
+      }
+    });
     document.querySelector('#close-turn-alert').addEventListener('click',() => {
       turnAlert.hidden = true;
       document.body.classList.remove('modal-open');
