@@ -19,6 +19,39 @@ const supabaseClient = window.supabase.createClient(config.url, config.publishab
 const lastCheckinKey = 'portalUltimoCheckin';
 let editingCheckin = null;
 
+function normalizeCompanyName(value) {
+  return value.trim().toLocaleLowerCase('pt-BR').replace(/\s+/g,' ');
+}
+
+async function companyAlreadyCheckedInToday(companyName) {
+  const normalizedName = normalizeCompanyName(companyName);
+  if (normalizedName.length < 2) return false;
+  const start = new Date();
+  start.setHours(0,0,0,0);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 1);
+  const { data,error } = await supabaseClient.from('motoristas')
+    .select('empresa')
+    .gte('criado_em',start.toISOString())
+    .lt('criado_em',end.toISOString());
+  if (error) {
+    console.error('Erro ao verificar empresa:',error);
+    return false;
+  }
+  return (data || []).some((record) => normalizeCompanyName(record.empresa || '') === normalizedName);
+}
+
+async function redirectIfCompanyExists() {
+  if (editingCheckin || !companyInput.value.trim()) return false;
+  const exists = await companyAlreadyCheckedInToday(companyInput.value);
+  if (!exists) return false;
+  feedback.textContent = 'Esta empresa já realizou o check-in hoje. Abrindo a fila...';
+  feedback.classList.remove('error');
+  feedback.style.display = 'block';
+  window.location.href = 'aguarde.html';
+  return true;
+}
+
 function clearVisibleForm() {
   editingCheckin = null;
   form.reset();
@@ -43,6 +76,8 @@ function toTitleCase(value) {
 [companyInput,driverInput].forEach((input) => {
   input.addEventListener('input',() => { input.value = toTitleCase(input.value); });
 });
+
+companyInput.addEventListener('change',redirectIfCompanyExists);
 
 [ddiInput,dddInput].forEach((input) => {
   input.addEventListener('input',() => {
@@ -76,6 +111,7 @@ noPhoneInput.addEventListener('change',() => {
 
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
+  if (!editingCheckin && await redirectIfCompanyExists()) return;
   const data = new FormData(form);
   const originalText = submitButton.innerHTML;
   submitButton.disabled = true;
@@ -143,9 +179,8 @@ form.addEventListener('submit', async (event) => {
   ddiInput.required = true;
   dddInput.required = true;
   if (!wasEditing) {
-    waitingModal.hidden = false;
-    document.body.classList.add('modal-open');
-    closeWaitingButton.focus();
+    window.location.href = 'aguarde.html';
+    return;
   }
 });
 

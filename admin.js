@@ -259,8 +259,14 @@ async function loadRecords(showLoading = true) {
     emptyTitle.textContent = 'Carregando motoristas...';
     emptyText.textContent = 'Aguarde um momento.';
   }
+  const startOfToday = new Date();
+  startOfToday.setHours(0,0,0,0);
+  const startOfTomorrow = new Date(startOfToday);
+  startOfTomorrow.setDate(startOfTomorrow.getDate() + 1);
   const { data,error } = await supabaseClient.from('motoristas')
     .select('id,empresa,motorista,celular,tipo_veiculo,status,criado_em')
+    .gte('criado_em',startOfToday.toISOString())
+    .lt('criado_em',startOfTomorrow.toISOString())
     .order('criado_em',{ ascending:false });
 
   if (error) {

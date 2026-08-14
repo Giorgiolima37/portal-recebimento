@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#e85b00">
+  <title>Aguarde ser chamado | Portal de Recebimento</title>
+  <link rel="icon" type="image/png" href="atacadao.png">
+  <link rel="apple-touch-icon" href="atacadao.png">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="aguarde.css">
+</head>
+<body>
+  <main class="app-shell waiting-page">
+    <header class="topbar">
+      <a class="brand" href="index.html" aria-label="Portal de Recebimento">
+        <span class="brand-icon" aria-hidden="true">
+          <svg viewBox="0 0 64 42"><path d="M2 4h40v26H2zM42 14h10l9 9v7H42zM8 30a7 7 0 1 0 14 0m25 0a7 7 0 1 0 14 0"/></svg>
+        </span>
+        <span><b>PORTAL DE</b><strong>RECEBIMENTO</strong><small>Recebimentos de Cargas</small></span>
+      </a>
+      <span class="retailer-logo" role="img" aria-label="Atacadão"></span>
+      <div class="session-info">
+        <span><b>DATA/HORA:</b><strong id="waiting-date"></strong></span>
+        <span><b>RM:</b><strong>José</strong></span>
+      </div>
+    </header>
+
+    <section class="waiting-content">
+      <p>CHECK-IN REALIZADO COM SUCESSO</p>
+      <h1>AGUARDE SER CHAMADO</h1>
+      <div class="waiting-message">
+        <strong>Seu cadastro já está na fila.</strong>
+        <span>Permaneça atento e aguarde a equipe de recebimento chamar sua empresa.</span>
+        <div class="queue-divider"></div>
+        <h2>Empresas com check-in hoje</h2>
+        <div class="driver-queue" id="driver-queue"><span>Carregando fila...</span></div>
+      </div>
+    </section>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <script>
+    document.querySelector('#waiting-date').textContent = new Intl.DateTimeFormat('pt-BR', {
+      day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'
+    }).format(new Date()).toUpperCase();
+
+    const waitingSupabase = window.supabase.createClient(
+      window.SUPABASE_CONFIG.url,
+      window.SUPABASE_CONFIG.publishableKey
+    );
+
+    async function loadDriverQueue() {
+      const start = new Date();
+      start.setHours(0,0,0,0);
+      const end = new Date(start);
+      end.setDate(end.getDate() + 1);
+      const { data,error } = await waitingSupabase.from('motoristas')
+        .select('id,empresa,criado_em')
+        .gte('criado_em',start.toISOString())
+        .lt('criado_em',end.toISOString())
+        .order('criado_em',{ ascending:true });
+      if (error) return;
+      const queue = document.querySelector('#driver-queue');
+      queue.textContent = '';
+      if (!data?.length) {
+        const empty = document.createElement('span');
+        empty.textContent = 'Nenhuma empresa na fila.';
+        queue.appendChild(empty);
+        return;
+      }
+      data.forEach((record,index) => {
+        const item = document.createElement('div');
+        const position = document.createElement('i');
+        position.textContent = String(index + 1);
+        const details = document.createElement('span');
+        const company = document.createElement('strong');
+        company.textContent = record.empresa;
+        details.appendChild(company);
+        item.append(position,details);
+        queue.appendChild(item);
+      });
+    }
+
+    loadDriverQueue();
+    setInterval(loadDriverQueue,3000);
+  </script>
+</body>
+</html>
