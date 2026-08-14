@@ -68,7 +68,7 @@ logoutButton.addEventListener('click',async () => {
   await supabaseClient.auth.signOut();
 });
 
-document.querySelector('#private-settings').addEventListener('click',() => {
+function openPrivateSettings() {
   passwordModal.hidden = false;
   document.querySelector('#new-user-form').reset();
   document.querySelector('#new-user-name').value = '';
@@ -77,7 +77,10 @@ document.querySelector('#private-settings').addEventListener('click',() => {
   passwordFeedback.textContent = '';
   passwordFeedback.classList.remove('success');
   document.body.classList.add('modal-open');
-});
+}
+
+document.querySelector('#private-settings').addEventListener('click',openPrivateSettings);
+document.querySelector('#private-settings-panel').addEventListener('click',openPrivateSettings);
 
 function closePasswordModal() {
   passwordModal.hidden = true;
@@ -115,7 +118,7 @@ passwordForm.addEventListener('submit',async (event) => {
   await supabaseClient.auth.signOut();
 });
 
-document.querySelector('#new-user-form').addEventListener('submit',(event) => {
+document.querySelector('#new-user-form').addEventListener('submit',async (event) => {
   event.preventDefault();
   const username = document.querySelector('#new-user-name').value.trim();
   const password = document.querySelector('#new-user-password').value;
@@ -130,7 +133,37 @@ document.querySelector('#new-user-form').addEventListener('submit',(event) => {
     feedback.textContent = 'As senhas informadas não são iguais.';
     return;
   }
-  feedback.textContent = 'Para concluir, crie este usuário em Authentication → Users no Supabase.';
+  const { data:{ session } } = await supabaseClient.auth.getSession();
+  if (!session) {
+    feedback.textContent = 'Entre no painel antes de adicionar um novo usuário.';
+    return;
+  }
+  const button = document.querySelector('#add-user-button');
+  button.disabled = true;
+  button.textContent = 'ADICIONANDO...';
+  try {
+    const response = await fetch('/api/usuarios',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization':`Bearer ${session.access_token}`
+      },
+      body:JSON.stringify({ nome:username,senha:password })
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'Não foi possível adicionar o usuário.');
+    feedback.textContent = `Usuário ${result.usuario.nome} adicionado com sucesso.`;
+    feedback.classList.add('success');
+    const chip = document.createElement('span');
+    chip.textContent = result.usuario.nome;
+    document.querySelector('.registered-users').appendChild(chip);
+    event.target.reset();
+  } catch (error) {
+    feedback.textContent = error.message;
+  } finally {
+    button.disabled = false;
+    button.textContent = 'ADICIONAR USUÁRIO';
+  }
 });
 
 document.querySelector('#new-user-name').addEventListener('input',(event) => {
