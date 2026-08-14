@@ -52,8 +52,8 @@ function updateSummary() {
     .map((record) => (record.empresa || '').trim().toLocaleLowerCase('pt-BR'))
     .filter(Boolean));
   document.querySelector('#companies-today-count').textContent = companiesToday.size;
-  document.querySelector('#waiting-count').textContent = records.filter((record) => record.status === 'aguardando').length;
-  document.querySelector('#service-count').textContent = records.filter((record) => record.status === 'em_atendimento').length;
+  document.querySelector('#waiting-count').textContent = todayRecords.filter((record) => record.status === 'aguardando').length;
+  document.querySelector('#service-count').textContent = todayRecords.filter((record) => record.status === 'em_atendimento').length;
   document.querySelector('#today-count').textContent = todayRecords.filter((record) => record.status === 'recebido').length;
 }
 
@@ -131,7 +131,7 @@ function openServiceModal(record,targetStatus) {
     ? 'A empresa '
     : 'A empresa ';
   document.querySelector('#service-modal p').lastChild.textContent = finishing
-    ? ' será removida da fila e apagada do banco de dados.'
+    ? ' sairá de “Em atendimento” e entrará em “Recebidos hoje”.'
     : ' sairá de “Aguardando” e entrará em “Em atendimento”.';
   confirmServiceButton.textContent = finishing ? 'Finalizar' : 'Confirmar';
   serviceModal.hidden = false;
@@ -152,17 +152,11 @@ async function confirmService() {
   const targetStatus = pendingTargetStatus;
   confirmServiceButton.disabled = true;
   confirmServiceButton.textContent = 'Atualizando...';
-  const request = targetStatus === 'recebido'
-    ? supabaseClient.from('motoristas')
-      .delete()
-      .eq('id',pendingServiceRecord.id)
-      .eq('status','em_atendimento')
-      .select('id')
-    : supabaseClient.from('motoristas')
-      .update({ status:targetStatus })
-      .eq('id',pendingServiceRecord.id)
-      .eq('status',currentStatus)
-      .select('id');
+  const request = supabaseClient.from('motoristas')
+    .update({ status:targetStatus })
+    .eq('id',pendingServiceRecord.id)
+    .eq('status',currentStatus)
+    .select('id');
   const { data,error } = await request;
   confirmServiceButton.disabled = false;
   confirmServiceButton.textContent = targetStatus === 'recebido' ? 'Finalizar' : 'Confirmar';

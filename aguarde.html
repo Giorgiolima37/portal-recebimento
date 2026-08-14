@@ -143,13 +143,14 @@
       if (error) return;
       const queue = document.querySelector('#driver-queue');
       queue.textContent = '';
-      if (!data?.length) {
+      const activeRecords = (data || []).filter((record) => record.status !== 'recebido');
+      if (!activeRecords.length) {
         const empty = document.createElement('span');
         empty.textContent = 'Nenhuma empresa na fila.';
         queue.appendChild(empty);
         return;
       }
-      data.forEach((record,index) => {
+      activeRecords.forEach((record,index) => {
         const item = document.createElement('div');
         if (record.status === 'em_atendimento') item.classList.add('in-service');
         const position = document.createElement('i');
