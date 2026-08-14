@@ -79,8 +79,21 @@ function openPrivateSettings() {
   document.body.classList.add('modal-open');
 }
 
-document.querySelector('#private-settings').addEventListener('click',openPrivateSettings);
-document.querySelector('#private-settings-panel').addEventListener('click',openPrivateSettings);
+async function requestPrivateAccess() {
+  const password = window.prompt('Digite a senha das configurações privadas:');
+  if (password === null) return;
+  const encoded = new TextEncoder().encode(password);
+  const digest = await crypto.subtle.digest('SHA-256',encoded);
+  const hash = Array.from(new Uint8Array(digest),byte => byte.toString(16).padStart(2,'0')).join('');
+  if (hash !== '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92') {
+    window.alert('Senha privada incorreta.');
+    return;
+  }
+  openPrivateSettings();
+}
+
+document.querySelector('#private-settings').addEventListener('click',requestPrivateAccess);
+document.querySelector('#private-settings-panel').addEventListener('click',requestPrivateAccess);
 
 function closePasswordModal() {
   passwordModal.hidden = true;
