@@ -29,6 +29,31 @@ let pendingTargetStatus = null;
 let loadingRecords = false;
 let refreshTimer = null;
 
+async function loadLoginUsers() {
+  const list = document.querySelector('#login-email');
+  try {
+    const response = await fetch('/api/usuarios');
+    if (!response.ok) throw new Error('Falha ao carregar');
+    const result = await response.json();
+    list.textContent = '';
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.disabled = true;
+    placeholder.selected = true;
+    placeholder.textContent = 'Selecione o usuário';
+    list.appendChild(placeholder);
+    (result.usuarios || []).forEach((user) => {
+      const option = document.createElement('option');
+      option.value = user.usuario || user.nome;
+      option.textContent = user.nome || user.usuario;
+      list.appendChild(option);
+    });
+  } catch (error) {
+    console.error('Não foi possível carregar os usuários:',error);
+    list.innerHTML = '<option value="" selected disabled>Não foi possível carregar</option>';
+  }
+}
+
 function usernameToEmail(username) {
   const identifier = (username || '')
     .normalize('NFD')
@@ -93,7 +118,6 @@ async function requestPrivateAccess() {
 }
 
 document.querySelector('#private-settings').addEventListener('click',requestPrivateAccess);
-document.querySelector('#private-settings-panel').addEventListener('click',requestPrivateAccess);
 
 function closePasswordModal() {
   passwordModal.hidden = true;
@@ -163,7 +187,12 @@ document.querySelector('#new-user-form').addEventListener('submit',async (event)
       },
       body:JSON.stringify({ nome:username,senha:password })
     });
-    const result = await response.json();
+    const responseText = await response.text();
+    let result = {};
+    try { result = responseText ? JSON.parse(responseText) : {}; } catch (_error) { result = {}; }
+    if (response.status === 405) {
+      throw new Error('A função api/usuarios.js não foi publicada corretamente na Vercel.');
+    }
     if (!response.ok) throw new Error(result.error || 'Não foi possível adicionar o usuário.');
     feedback.textContent = `Usuário ${result.usuario.nome} adicionado com sucesso.`;
     feedback.classList.add('success');
@@ -458,3 +487,4 @@ async function loadRecords(showLoading = true) {
 
 search.addEventListener('input',() => render(search.value));
 supabaseClient.auth.getSession().then(({ data }) => showAuthenticatedPanel(data.session));
+loadLoginUsers();

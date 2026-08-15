@@ -8,10 +8,21 @@ function usernameIdentifier(name) {
     .replace(/[^a-z0-9]/g,'');
 }
 
-module.exports = async function handler(req,res) {
-  if (req.method !== 'POST') return res.status(405).json({ error:'Método não permitido.' });
+export default async function handler(req,res) {
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!serviceKey) return res.status(500).json({ error:'Configure SUPABASE_SERVICE_ROLE_KEY na Vercel.' });
+
+  if (req.method === 'GET') {
+    const usersResponse = await fetch(
+      `${SUPABASE_URL}/rest/v1/usuarios?select=usuario,nome&ativo=eq.true&order=nome.asc`,
+      { headers:{ apikey:serviceKey,Authorization:`Bearer ${serviceKey}` } }
+    );
+    const users = await usersResponse.json();
+    if (!usersResponse.ok) return res.status(400).json({ error:'Não foi possível carregar os usuários.' });
+    return res.status(200).json({ usuarios:users });
+  }
+
+  if (req.method !== 'POST') return res.status(405).json({ error:'Método não permitido.' });
 
   const authorization = req.headers.authorization || '';
   if (!authorization.startsWith('Bearer ')) return res.status(401).json({ error:'Administrador não autenticado.' });

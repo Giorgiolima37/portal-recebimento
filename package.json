@@ -1,0 +1,8 @@
+{
+  "name": "portal-recebimento",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "vercel": "^59.0.0"
+  }
+}
