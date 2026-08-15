@@ -20,39 +20,11 @@ const loginForm = document.querySelector('#login-form');
 const loginButton = document.querySelector('#login-button');
 const loginError = document.querySelector('#login-error');
 const logoutButton = document.querySelector('#logout-button');
-const passwordModal = document.querySelector('#password-modal');
-const passwordForm = document.querySelector('#password-form');
-const passwordFeedback = document.querySelector('#password-feedback');
 let records = [];
 let pendingServiceRecord = null;
 let pendingTargetStatus = null;
 let loadingRecords = false;
 let refreshTimer = null;
-
-async function loadLoginUsers() {
-  const list = document.querySelector('#login-email');
-  try {
-    const response = await fetch('/api/usuarios');
-    if (!response.ok) throw new Error('Falha ao carregar');
-    const result = await response.json();
-    list.textContent = '';
-    const placeholder = document.createElement('option');
-    placeholder.value = '';
-    placeholder.disabled = true;
-    placeholder.selected = true;
-    placeholder.textContent = 'Selecione o usuário';
-    list.appendChild(placeholder);
-    (result.usuarios || []).forEach((user) => {
-      const option = document.createElement('option');
-      option.value = user.usuario || user.nome;
-      option.textContent = user.nome || user.usuario;
-      list.appendChild(option);
-    });
-  } catch (error) {
-    console.error('Não foi possível carregar os usuários:',error);
-    list.innerHTML = '<option value="" selected disabled>Não foi possível carregar</option>';
-  }
-}
 
 function usernameToEmail(username) {
   const identifier = (username || '')
@@ -68,6 +40,12 @@ async function showAuthenticatedPanel(session) {
   loginScreen.hidden = authenticated;
   adminPanel.hidden = !authenticated;
   if (authenticated) {
+    const email = session.user?.email || '';
+    const selectedOption = Array.from(document.querySelector('#login-email').options)
+      .find((option) => usernameToEmail(option.value) === email);
+    document.querySelector('#logged-user-name').textContent = selectedOption?.textContent
+      || session.user?.user_metadata?.nome
+      || email.split('@')[0];
     await loadRecords();
     if (!refreshTimer) refreshTimer = setInterval(() => loadRecords(false),3000);
   } else if (refreshTimer) {
@@ -91,129 +69,6 @@ loginForm.addEventListener('submit',async (event) => {
 
 logoutButton.addEventListener('click',async () => {
   await supabaseClient.auth.signOut();
-});
-
-function openPrivateSettings() {
-  passwordModal.hidden = false;
-  document.querySelector('#new-user-form').reset();
-  document.querySelector('#new-user-name').value = '';
-  document.querySelector('#new-user-password').value = '';
-  document.querySelector('#new-user-confirm').value = '';
-  passwordFeedback.textContent = '';
-  passwordFeedback.classList.remove('success');
-  document.body.classList.add('modal-open');
-}
-
-async function requestPrivateAccess() {
-  const password = window.prompt('Digite a senha das configurações privadas:');
-  if (password === null) return;
-  const encoded = new TextEncoder().encode(password);
-  const digest = await crypto.subtle.digest('SHA-256',encoded);
-  const hash = Array.from(new Uint8Array(digest),byte => byte.toString(16).padStart(2,'0')).join('');
-  if (hash !== '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92') {
-    window.alert('Senha privada incorreta.');
-    return;
-  }
-  openPrivateSettings();
-}
-
-document.querySelector('#private-settings').addEventListener('click',requestPrivateAccess);
-
-function closePasswordModal() {
-  passwordModal.hidden = true;
-  passwordForm.reset();
-  document.body.classList.remove('modal-open');
-}
-
-document.querySelector('#password-close').addEventListener('click',closePasswordModal);
-passwordModal.addEventListener('click',(event) => { if (event.target === passwordModal) closePasswordModal(); });
-
-passwordForm.addEventListener('submit',async (event) => {
-  event.preventDefault();
-  const currentPassword = document.querySelector('#current-password').value;
-  const newPassword = document.querySelector('#new-password').value;
-  const confirmation = document.querySelector('#confirm-password').value;
-  const email = usernameToEmail(document.querySelector('#password-user').value);
-  passwordFeedback.classList.remove('success');
-  if (newPassword !== confirmation) {
-    passwordFeedback.textContent = 'As novas senhas não são iguais.';
-    return;
-  }
-  const { error:loginError } = await supabaseClient.auth.signInWithPassword({ email,password:currentPassword });
-  if (loginError) {
-    passwordFeedback.textContent = 'A senha atual está incorreta.';
-    return;
-  }
-  const { error } = await supabaseClient.auth.updateUser({ password:newPassword });
-  if (error) {
-    passwordFeedback.textContent = 'Não foi possível alterar a senha.';
-    return;
-  }
-  passwordFeedback.textContent = 'Senha alterada com sucesso.';
-  passwordFeedback.classList.add('success');
-  passwordForm.reset();
-  await supabaseClient.auth.signOut();
-});
-
-document.querySelector('#new-user-form').addEventListener('submit',async (event) => {
-  event.preventDefault();
-  const username = document.querySelector('#new-user-name').value.trim();
-  const password = document.querySelector('#new-user-password').value;
-  const confirmation = document.querySelector('#new-user-confirm').value;
-  const feedback = document.querySelector('#new-user-feedback');
-  feedback.classList.remove('success');
-  if (!/^[\p{L}\p{N}]+(?: [\p{L}\p{N}]+)*$/u.test(username)) {
-    feedback.textContent = 'Use somente nomes, números e espaços simples.';
-    return;
-  }
-  if (password !== confirmation) {
-    feedback.textContent = 'As senhas informadas não são iguais.';
-    return;
-  }
-  const { data:{ session } } = await supabaseClient.auth.getSession();
-  if (!session) {
-    feedback.textContent = 'Entre no painel antes de adicionar um novo usuário.';
-    return;
-  }
-  const button = document.querySelector('#add-user-button');
-  button.disabled = true;
-  button.textContent = 'ADICIONANDO...';
-  try {
-    const response = await fetch('/api/usuarios',{
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'Authorization':`Bearer ${session.access_token}`
-      },
-      body:JSON.stringify({ nome:username,senha:password })
-    });
-    const responseText = await response.text();
-    let result = {};
-    try { result = responseText ? JSON.parse(responseText) : {}; } catch (_error) { result = {}; }
-    if (response.status === 405) {
-      throw new Error('A função api/usuarios.js não foi publicada corretamente na Vercel.');
-    }
-    if (!response.ok) throw new Error(result.error || 'Não foi possível adicionar o usuário.');
-    feedback.textContent = `Usuário ${result.usuario.nome} adicionado com sucesso.`;
-    feedback.classList.add('success');
-    const chip = document.createElement('span');
-    chip.textContent = result.usuario.nome;
-    document.querySelector('.registered-users').appendChild(chip);
-    event.target.reset();
-  } catch (error) {
-    feedback.textContent = error.message;
-  } finally {
-    button.disabled = false;
-    button.textContent = 'ADICIONAR USUÁRIO';
-  }
-});
-
-document.querySelector('#new-user-name').addEventListener('input',(event) => {
-  const cursor = event.target.selectionStart;
-  event.target.value = event.target.value
-    .toLocaleLowerCase('pt-BR')
-    .replace(/(^|\s)([\p{L}\p{N}])/gu,(_,space,letter) => space + letter.toLocaleUpperCase('pt-BR'));
-  event.target.setSelectionRange(cursor,cursor);
 });
 
 supabaseClient.auth.onAuthStateChange((_event,session) => {
@@ -487,4 +342,3 @@ async function loadRecords(showLoading = true) {
 
 search.addEventListener('input',() => render(search.value));
 supabaseClient.auth.getSession().then(({ data }) => showAuthenticatedPanel(data.session));
-loadLoginUsers();

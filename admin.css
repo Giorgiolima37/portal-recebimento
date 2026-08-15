@@ -6,8 +6,6 @@ body { background:linear-gradient(135deg,#dce4e7,#f8fafb); }
 .login-content>p { margin:0 0 6px; color:var(--blue); font-size:13px; font-weight:800; letter-spacing:1px; }
 .access-heading { margin-bottom:6px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
 .access-heading p { margin:0; color:var(--blue); font-size:13px; font-weight:800; letter-spacing:1px; }
-.private-badge { padding:5px 8px; display:inline-flex; align-items:center; gap:5px; border:1px solid #d5dde2; border-radius:15px; background:#eef3f5; color:#52616b; font-size:11px; font-weight:700; cursor:pointer; }
-.private-badge svg { width:15px; height:15px; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
 .login-content h1 { margin:0 0 24px; font:700 32px 'Barlow Condensed',sans-serif; }
 #login-form { padding:22px; display:grid; gap:17px; border:1px solid #dce3e7; border-radius:11px; background:white; box-shadow:0 5px 18px #26333e12; }
 #login-form label { display:grid; gap:7px; font-size:14px; font-weight:700; }
@@ -21,9 +19,11 @@ body { background:linear-gradient(135deg,#dce4e7,#f8fafb); }
 .admin-header .brand b,.admin-header .brand strong { font-size:15px; }
 .admin-header .brand small { font-size:9px; }
 .admin-header .retailer-logo { width:170px; height:70px; flex:0 1 170px; background-size:184px 184px; }
+.admin-logo-block { min-width:0; flex:0 1 170px; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.admin-logo-block .retailer-logo { width:170px; height:57px; flex:none; }
+.logged-user-name { margin-top:-6px; color:white; font-size:11px; line-height:1; text-align:center; }
 .admin-user { display:flex; align-items:center; gap:7px; font-size:11px; font-weight:600; }
 .admin-user>button { border:0; background:transparent; color:white; font:600 11px Inter,sans-serif; cursor:pointer; }
-.admin-user .panel-private { padding:4px 6px; border:1px solid #ffffff70; border-radius:13px; }
 .avatar { width:48px; height:48px; display:grid; place-items:center; overflow:hidden; border-radius:50%; background:white; border:2px solid #ffffffa6; }
 .avatar img { width:100%; height:100%; display:block; object-fit:contain; object-position:center; }
 .admin-content { width:100%; padding:22px 14px 35px; }
@@ -89,24 +89,6 @@ td::before { content:attr(data-label); color:#66737c; font-size:10px; font-weigh
 .release-service svg { fill:currentColor; stroke:none; }
 .modal-backdrop { position:fixed; z-index:20; inset:0; padding:20px; display:grid; place-items:center; background:#102a3db3; }
 .modal-backdrop[hidden] { display:none; }
-.password-modal { position:relative; width:min(100%,360px); max-height:calc(100vh - 30px); padding:25px 22px 22px; overflow-y:auto; border-radius:12px; background:white; box-shadow:0 18px 60px #07172366; }
-.password-modal h2 { margin:5px 38px 18px 0; font-size:24px; }
-.registered-users { margin-bottom:18px; padding:13px; display:flex; flex-wrap:wrap; gap:7px; border-radius:8px; background:#f2f6f7; }
-.registered-users strong { width:100%; margin-bottom:2px; font-size:13px; }
-.registered-users span { padding:5px 8px; border-radius:13px; background:white; color:#52616b; font-size:11px; font-weight:700; }
-#password-form { display:grid; gap:13px; }
-#password-form label { display:grid; gap:6px; font-size:13px; font-weight:700; }
-#password-form input,#password-form select { width:100%; height:44px; padding:0 12px; border:1px solid #afbec7; border-radius:7px; background:white; font:400 15px Inter,sans-serif; }
-#change-password { min-height:46px; border:0; border-radius:7px; background:#008f49; color:white; font:700 15px 'Barlow Condensed',sans-serif; cursor:pointer; }
-.settings-divider { height:1px; margin:20px 0; background:#dfe6e9; }
-.new-user-section h3 { margin:0 0 14px; font:700 21px 'Barlow Condensed',sans-serif; }
-#new-user-form { display:grid; gap:13px; }
-#new-user-form label { display:grid; gap:6px; font-size:13px; font-weight:700; }
-#new-user-form input { width:100%; height:44px; padding:0 12px; border:1px solid #afbec7; border-radius:7px; font:400 15px Inter,sans-serif; }
-#add-user-button { min-height:46px; border:1px solid #008f49; border-radius:7px; background:white; color:#008f49; font:700 15px 'Barlow Condensed',sans-serif; cursor:pointer; }
-#add-user-button:disabled { opacity:.65; cursor:wait; }
-.password-feedback { min-height:18px; color:#c12d25; font-size:12px; text-align:center; }
-.password-feedback.success { color:#008f49; }
 .driver-modal { position:relative; width:min(100%,360px); padding:25px 22px 22px; border-radius:12px; background:white; box-shadow:0 18px 60px #07172366; animation:modal-in .18s ease-out; }
 .modal-close { position:absolute; top:9px; right:10px; width:36px; height:36px; border:0; border-radius:50%; background:#eef3f6; color:#33434d; font-size:25px; line-height:1; cursor:pointer; }
 .modal-label { color:var(--blue); font-size:11px; font-weight:800; letter-spacing:.7px; }
