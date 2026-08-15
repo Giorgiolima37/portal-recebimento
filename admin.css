@@ -4,9 +4,9 @@ body { background:linear-gradient(135deg,#dce4e7,#f8fafb); }
 .login-header .retailer-logo { margin-left:auto; }
 .login-content { padding:42px 28px; }
 .login-content>p { margin:0 0 6px; color:var(--blue); font-size:13px; font-weight:800; letter-spacing:1px; }
-.access-heading { margin-bottom:6px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
-.access-heading p { margin:0; color:var(--blue); font-size:13px; font-weight:800; letter-spacing:1px; }
-.login-content h1 { margin:0 0 24px; font:700 32px 'Barlow Condensed',sans-serif; }
+.access-heading { margin-bottom:6px; display:flex; align-items:center; justify-content:center; gap:12px; text-align:center; }
+.access-heading p { margin:0; color:var(--blue); font-size:13px; font-weight:800; letter-spacing:1px; text-align:center; }
+.login-content h1 { margin:0 0 24px; font:700 32px 'Barlow Condensed',sans-serif; text-align:center; }
 #login-form { padding:22px; display:grid; gap:17px; border:1px solid #dce3e7; border-radius:11px; background:white; box-shadow:0 5px 18px #26333e12; }
 #login-form label { display:grid; gap:7px; font-size:14px; font-weight:700; }
 #login-form input,#login-form select { width:100%; height:48px; padding:0 13px; border:1px solid #afbec7; border-radius:7px; background:white; font:400 15px Inter,sans-serif; }
