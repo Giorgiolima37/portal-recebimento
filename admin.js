@@ -25,6 +25,11 @@ let pendingServiceRecord = null;
 let pendingTargetStatus = null;
 let loadingRecords = false;
 let refreshTimer = null;
+let presenceTimer = null;
+let heartbeatTimer = null;
+let lockRequestRunning = false;
+const adminSessionId = sessionStorage.getItem('admin-session-id') || crypto.randomUUID();
+sessionStorage.setItem('admin-session-id',adminSessionId);
 
 function usernameToEmail(username) {
   const identifier = (username || '')
@@ -35,22 +40,70 @@ function usernameToEmail(username) {
   return identifier ? `${identifier}@portal-recebimento.com` : '';
 }
 
+async function refreshBusyUsers() {
+  const select = document.querySelector('#login-email');
+  const { data,error } = await supabaseClient.rpc('listar_usuarios_em_uso');
+  if (error) return;
+  const busyEmails = new Set((data || []).map((item) => item.email));
+  Array.from(select.options).forEach((option) => {
+    if (!option.value) return;
+    const originalName = option.dataset.originalName || option.textContent.replace(/ \(EM USO\)$/,'');
+    option.dataset.originalName = originalName;
+    const busy = busyEmails.has(usernameToEmail(option.value));
+    option.disabled = busy;
+    option.classList.toggle('user-busy',busy);
+    option.textContent = busy ? `${originalName} (EM USO)` : originalName;
+  });
+}
+
+async function claimAdminSession(session) {
+  if (!session || lockRequestRunning) return Boolean(session);
+  lockRequestRunning = true;
+  const { data,error } = await supabaseClient.rpc('ocupar_sessao_administrativa',{
+    p_sessao_id:adminSessionId
+  });
+  lockRequestRunning = false;
+  if (error) {
+    loginError.textContent = 'Execute o arquivo supabase-sessoes-administrativas.sql no Supabase.';
+    await supabaseClient.auth.signOut();
+    return false;
+  }
+  if (!data) {
+    loginError.textContent = 'Este usuário já está conectado em outro aparelho.';
+    await supabaseClient.auth.signOut();
+    await refreshBusyUsers();
+    return false;
+  }
+  if (!heartbeatTimer) {
+    heartbeatTimer = setInterval(() => {
+      supabaseClient.rpc('manter_sessao_administrativa',{ p_sessao_id:adminSessionId });
+    },10000);
+  }
+  return true;
+}
+
 async function showAuthenticatedPanel(session) {
   const authenticated = Boolean(session);
+  if (authenticated && !(await claimAdminSession(session))) return;
   loginScreen.hidden = authenticated;
   adminPanel.hidden = !authenticated;
   if (authenticated) {
     const email = session.user?.email || '';
     const selectedOption = Array.from(document.querySelector('#login-email').options)
       .find((option) => usernameToEmail(option.value) === email);
-    document.querySelector('#logged-user-name').textContent = selectedOption?.textContent
+    const loggedUserName = selectedOption?.textContent
       || session.user?.user_metadata?.nome
       || email.split('@')[0];
+    document.querySelector('#logged-user-name').textContent = `Usuário: ${loggedUserName}`;
     await loadRecords();
     if (!refreshTimer) refreshTimer = setInterval(() => loadRecords(false),3000);
   } else if (refreshTimer) {
     clearInterval(refreshTimer);
     refreshTimer = null;
+  }
+  if (!authenticated && heartbeatTimer) {
+    clearInterval(heartbeatTimer);
+    heartbeatTimer = null;
   }
 }
 
@@ -68,6 +121,7 @@ loginForm.addEventListener('submit',async (event) => {
 });
 
 logoutButton.addEventListener('click',async () => {
+  await supabaseClient.rpc('liberar_sessao_administrativa',{ p_sessao_id:adminSessionId });
   await supabaseClient.auth.signOut();
 });
 
@@ -341,4 +395,9 @@ async function loadRecords(showLoading = true) {
 }
 
 search.addEventListener('input',() => render(search.value));
+refreshBusyUsers();
+presenceTimer = setInterval(() => {
+  if (!adminPanel.hidden) return;
+  refreshBusyUsers();
+},5000);
 supabaseClient.auth.getSession().then(({ data }) => showAuthenticatedPanel(data.session));
